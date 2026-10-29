@@ -39,32 +39,36 @@ def cam_lock_update(self, context):
         bpy.types.VIEW3D_HT_tool_header.remove(draw_cam_lock)
 
 
-def node_keymap(keyconfig):
+def node_keymap(keyconfig, enabled):
+    # Blender's own menu opens on press, this add-on's opens on release: exactly one is on.
     for key in keyconfig.keymaps["Node Editor"].keymap_items:
         if key.idname == "wm.call_menu" and key.type == "RIGHTMOUSE":
-            key.active = not key.active
+            key.active = not enabled
+        elif key.idname == "rmn.right_mouse_navigation" and key.type == "RIGHTMOUSE":
+            key.active = enabled
+
+
+def apply_node_keymap(context):
+    """Make the Node Editor keymaps match the preference.
+
+    Sets the state instead of flipping it, so a default of True takes effect at
+    startup too: otherwise Blender's own right click menu stays active and opens on
+    press, while this add-on's version stays off.
+    """
+    wm = context.window_manager
+    enabled = context.preferences.addons[__package__].preferences.enable_for_node_editors
+
+    configs = [wm.keyconfigs.active, wm.keyconfigs.addon]
+    configs += [wm.keyconfigs[name] for name in ("Blender user", "Blender") if name in wm.keyconfigs]
+    for keyconfig in configs:
+        try:
+            node_keymap(keyconfig, enabled)
+        except KeyError:
+            pass
 
 
 def update_node_keymap(self, context):
-    wm = context.window_manager
-    active_keyconfig = wm.keyconfigs.active
-    blender_keyconfig = wm.keyconfigs["Blender"]
-    user_keyconfig = wm.keyconfigs["Blender user"]
-
-    try:
-        node_keymap(active_keyconfig)
-    except:
-        node_keymap(blender_keyconfig)
-    finally:
-        node_keymap(user_keyconfig)
-
-    preferences = context.preferences
-    addon_prefs = preferences.addons[__package__].preferences
-    # addon_kc = wm.keyconfigs.addon
-
-    for key in user_keyconfig.keymaps["Node Editor"].keymap_items:
-        if key.idname == "rmn.right_mouse_navigation" and key.type == "RIGHTMOUSE":
-            key.active = addon_prefs.enable_for_node_editors
+    apply_node_keymap(context)
 
 
 def update_rebind_3dview_keymap(self, context):    

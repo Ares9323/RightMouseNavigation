@@ -4,7 +4,7 @@ from .operators import (
     RMN_OT_right_mouse_navigation,
     RMN_OT_toggle_cam_navigation,
 )
-from .preferences import RightMouseNavigationPreferences
+from .preferences import RightMouseNavigationPreferences, apply_node_keymap
 from bpy.app.handlers import persistent
 
 addon_keymaps = []
@@ -67,6 +67,11 @@ def unregister_keymaps(menumodes, panelmodes, keyconfig):
             if key.idname == "wm.call_menu" and key.type == "RIGHTMOUSE":
                 key.active = True
                 key.value = "PRESS"
+
+    # Reactivating the Node Editor menu, which apply_node_keymap turns off while enabled
+    for key in keyconfig.keymaps["Node Editor"].keymap_items:
+        if key.idname == "wm.call_menu" and key.type == "RIGHTMOUSE":
+            key.active = True
 
     # Reactivating panels
     for i in panelmodes:
@@ -165,6 +170,11 @@ def register():
                 panelmodes=panelmodes,
                 keyconfig=user_keyconfig,
             )
+
+        try:
+            apply_node_keymap(bpy.context)
+        except Exception as e:
+            print(f"[Right Mouse Navigation] Could not set the Node Editor keymap: {e}")
 
 
 def unregister():
