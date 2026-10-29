@@ -140,13 +140,13 @@ class RightMouseNavigationPreferences(AddonPreferences):
         name="Return to Orthographic on Exit",
         description="After exiting navigation, this determines if the Viewport "
         "returns to Orthographic view (if checked) or remains in Perspective view (if unchecked)",
-        default=True,
+        default=False,
     )
 
     enable_for_node_editors: BoolProperty(
         name="Enable for Node Editors",
         description="Right Mouse will pan the view / open the Node Add/Search Menu",
-        default=False,
+        default=True,
         update=update_node_keymap,
     )
 
