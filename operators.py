@@ -11,6 +11,9 @@ class RMN_OT_right_mouse_navigation(Operator):
 
     _timer = None
     _count = 0
+    _moved = 0
+    # Pixels the mouse may travel between press and release and still count as a click
+    MOVE_THRESHOLD_PX = 6
     MOUSE_RIGHTUP = 0x0010
     _finished = False
     _callMenu = False
@@ -49,6 +52,7 @@ class RMN_OT_right_mouse_navigation(Operator):
         # The _finished Boolean acts as a flag to exit the modal loop,
         # it is not made True until after the cancel function is called
         if self._finished:
+            self.cancel(context)
 
             def reset_cursor():
                 # Reset blender window cursor to previous position
@@ -79,15 +83,19 @@ class RMN_OT_right_mouse_navigation(Operator):
                 if event.value in {"RELEASE"}:
                     # This brings back our mouse cursor to use with the menu
                     context.window.cursor_modal_restore()
-                    # If the length of time you've been holding down
-                    # Right Mouse and Mouse move distance is longer than the threshold value,
-                    # then set flag to call a context menu
-                    if self._count < addon_prefs.time:
+                    # A click is a press and release without the mouse travelling more than a
+                    # few pixels, however long it was held; a longer hold with movement is a
+                    # navigation. Then set flag to call a context menu
+                    if self._moved < self.MOVE_THRESHOLD_PX:
                         self._callMenu = True
-                    self.cancel(context)
-                    # We now set the flag to true to exit the modal operator on the next loop
+                    # We now set the flag to true to exit the modal operator on the next loop.
+                    # The timer stays alive until then, so that loop comes within 0.1s even
+                    # if the mouse is still, instead of whenever the next event happens.
                     self._finished = True
                     return {"PASS_THROUGH"}
+
+            if event.type == "MOUSEMOVE":
+                self._moved += abs(event.mouse_x - event.mouse_prev_x) + abs(event.mouse_y - event.mouse_prev_y)
 
             if event.type == "TIMER":
                 if self._count <= addon_prefs.time:
